@@ -47,6 +47,11 @@ jobs:
             --model '{"num_tags":2,"start_transitions":[0.0,0.0],"end_transitions":[0.0,0.0],"transitions":[[0.0,0.0],[0.0,0.0]]}' \
             --emit '[[0.0,1.0],[2.0,0.0]]' > cli-json.txt
           python3 -c 'assert "1 0" in open("cli-json.txt").read()'
+          # BIO 约束模式：O 后禁止 I-PER，应回退为 O O。
+          moon run --target ${{ matrix.target }} cmd/main -- \
+            --model '{"num_tags":3,"start_transitions":[0.0,0.0,0.0],"end_transitions":[0.0,0.0,0.0],"transitions":[[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]]}' \
+            --emit '[[5.0,0.0,0.0],[0.0,0.0,5.0]]' --bio 'O,B-PER,I-PER' > cli-bio.txt
+          python3 -c 't=open("cli-bio.txt").read(); assert "O O" in t and "confidence" in t'
           # 非法选项：必须非零退出，且输出含 error:。
           if moon run --target ${{ matrix.target }} cmd/main -- --bogus > cli-err.txt 2> cli-err.log; then
             echo "invalid CLI arguments unexpectedly succeeded"
