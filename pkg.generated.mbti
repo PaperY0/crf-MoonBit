@@ -46,12 +46,14 @@ pub struct Crf {
   transitions : Array[Array[Double]]
 }
 pub fn Crf::confidence(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Confidence raise CrfError
+pub fn Crf::confidence_batch(Self, Array[Array[Array[Double]]], Array[Array[Bool]]?, Constraints?) -> Array[Confidence] raise CrfError
 pub fn Crf::decode(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Int32] raise CrfError
 pub fn Crf::decode_batch(Self, Array[Array[Array[Double]]], Array[Array[Bool]]?, Constraints?) -> Array[Array[Int32]] raise CrfError
 pub fn Crf::from_json(String) -> Self raise CrfError
 pub fn Crf::log_likelihood(Self, Array[Array[Double]], Array[Int32], Array[Bool]?, Constraints?) -> Double raise CrfError
 pub fn Crf::log_partition(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Double raise CrfError
 pub fn Crf::marginals(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Array[Double]] raise CrfError
+pub fn Crf::marginals_batch(Self, Array[Array[Array[Double]]], Array[Array[Bool]]?, Constraints?) -> Array[Array[Array[Double]]] raise CrfError
 pub fn Crf::nbest(Self, Array[Array[Double]], Array[Bool]?, Constraints?, Int32) -> Array[DecodedPath] raise CrfError
 pub fn Crf::new(Int32, Array[Double], Array[Double], Array[Array[Double]]) -> Self raise CrfError
 pub fn Crf::posterior_decode(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Int32] raise CrfError
