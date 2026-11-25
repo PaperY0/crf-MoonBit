@@ -134,6 +134,8 @@ pub suberror CrfError { InvalidShape(String); EmptySequence; InvalidTags(String)
 - `tools/gen_vectors.py` 用 numpy **精确复刻 torchcrf 的前向 / Viterbi / 前向–后向递推**，
   生成 **10 条参考向量**：7 条无约束（K∈{2,3,4,5}，T∈{1,2,3,5,6,8,12}）+ 3 条 BIO 约束
   （T∈{5,7,9}，标签 `O/B-PER/I-PER/B-LOC/I-LOC`），固定随机种子 20261125。
+  所有输入/输出统一量化到 **10 位有效数字**（远小于 1e-6 断言容差），消除跨平台 libm 的
+  末位 ULP 噪声，保证 Windows / Linux 逐字节可复现；CI 钉住 numpy 版本。
 - `reference_vectors_wbtest.mbt` 把这些向量转成 MoonBit 白盒测试，逐条断言：
   **Viterbi 路径精确相等**、`score` / `log Z` / 每个边际概率误差 **< 1e-6**、
   边际每行和为 1、`log_likelihood ≤ 0`。

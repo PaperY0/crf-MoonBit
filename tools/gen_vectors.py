@@ -18,6 +18,21 @@ NEG = -1e308
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def q(x):
+    """Round to 10 significant digits so output is byte-stable across
+    platforms / numpy builds (last-ULP libm noise is ~1e-16 relative,
+    far below both this quantization and the 1e-6 MoonBit tolerance)."""
+    return float(f"{float(x):.10g}")
+
+
+def qa(a):
+    return np.array([q(x) for x in a])
+
+
+def qm(m):
+    return np.array([[q(x) for x in row] for row in m])
+
+
 def lse(xs):
     xs = np.asarray(xs, dtype=np.float64)
     m = float(xs.max())
@@ -111,7 +126,7 @@ def bio_mask(tags):
 
 
 def fmt_double(x):
-    return repr(float(x))
+    return repr(q(x))
 
 
 def fmt_arr(a):
@@ -136,10 +151,10 @@ def main():
 
     # Unconstrained cases across shapes.
     for (K, L) in [(2, 1), (2, 3), (3, 2), (3, 5), (4, 8), (5, 6), (2, 12)]:
-        start = rng.normal(0, 0.7, K)
-        end = rng.normal(0, 0.7, K)
-        trans = rng.normal(0, 0.9, (K, K))
-        emit = rng.normal(0, 1.0, (L, K))
+        start = qa(rng.normal(0, 0.7, K))
+        end = qa(rng.normal(0, 0.7, K))
+        trans = qm(rng.normal(0, 0.9, (K, K)))
+        emit = qm(rng.normal(0, 1.0, (L, K)))
         path, sc = viterbi(start, end, trans, emit)
         lz = forward_logz(start, end, trans, emit)
         mg = marginals(start, end, trans, emit)
@@ -151,10 +166,10 @@ def main():
     for (L, seed) in [(5, 1), (7, 2), (9, 3)]:
         r = np.random.default_rng(seed)
         K = len(bio_tags)
-        start = r.normal(0, 0.5, K)
-        end = r.normal(0, 0.5, K)
-        trans = r.normal(0, 0.8, (K, K))
-        emit = r.normal(0, 1.2, (L, K))
+        start = qa(r.normal(0, 0.5, K))
+        end = qa(r.normal(0, 0.5, K))
+        trans = qm(r.normal(0, 0.8, (K, K)))
+        emit = qm(r.normal(0, 1.2, (L, K)))
         ca = bio_mask(bio_tags)
         path, sc = viterbi(start, end, trans, emit, ca)
         lz = forward_logz(start, end, trans, emit, ca)
@@ -214,8 +229,9 @@ def main():
                            transitions=c["trans"].tolist(),
                            emissions=c["emit"].tolist(),
                            use_bio=c["bio"], tags=c["tags"],
-                           expected_path=c["path"], expected_score=c["score"],
-                           expected_logz=c["logz"], expected_marginals=c["mg"].tolist()))
+                           expected_path=c["path"], expected_score=q(c["score"]),
+                           expected_logz=q(c["logz"]),
+                           expected_marginals=[[q(x) for x in row] for row in c["mg"].tolist()]))
     os.makedirs(os.path.join(ROOT, "data"), exist_ok=True)
     with open(os.path.join(ROOT, "data", "reference_vectors.json"), "w", encoding="utf-8") as f:
         json.dump(jcases, f, indent=2)
