@@ -1,0 +1,5 @@
+import {
+  "PaperY0/crf" @lib,
+}
+
+pkgtype(kind: "executable")

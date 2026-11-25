@@ -58,6 +58,9 @@ jobs:
             exit 1
           fi
           python3 -c 'from pathlib import Path; assert "error:" in Path("cli-err.txt").read_text()+Path("cli-err.log").read_text()'
+          # examples/ner 端到端示例冒烟。
+          moon run --target ${{ matrix.target }} examples/ner > example.txt
+          python3 -c 't=open("example.txt").read(); assert "Sherry -> B-PER" in t and "Qingdao -> B-LOC" in t'
 
   # native 后端在 Linux 上单独验证（gcc 头文件齐全）；Windows 本地
   # msys2 缺 SO_REUSE_MULTICASTPORT 属环境问题，不影响此处结论。
@@ -81,6 +84,11 @@ jobs:
 
       - name: Test (native)
         run: moon test --target native
+
+      - name: Example smoke (native)
+        run: |
+          moon run --target native examples/ner > example.txt
+          python3 -c 't=open("example.txt").read(); assert "Sherry -> B-PER" in t and "Qingdao -> B-LOC" in t'
 
   # `moon info` 生成的接口若与提交不一致，说明 .mbti 忘了更新。
   interface:
