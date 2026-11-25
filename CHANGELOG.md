@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### CI 强化（无库代码变更）
+- CLI 冒烟补全：`--bioes` 单 token S-PER 解码、`--nbest 5` top-5 输出、
+  `--nbest 0` 与 `--bio/--bioes` 互斥的非零退出断言。
+- 每后端覆盖率门禁：wasm / wasm-gc / js 各自 `--enable-coverage` 测试后
+  断言库代码零未覆盖行（三后端本地均已验证 100%）。
+
 ## 0.2.0 (2026-11-25)
 
 ### 新增

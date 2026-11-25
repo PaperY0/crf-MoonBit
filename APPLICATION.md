@@ -146,7 +146,7 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 
 **仓库**：https://github.com/PaperY0/crf-MoonBit （公开，CI 全绿）
 
-共 **30 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
+共 **32 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
 无意义拆分或重复提交：
 
 | # | 提交 | 内容 |
@@ -180,11 +180,15 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 | 27 | `702666b` | 修复：torchcrf 内部方法 seq-first 布局转置 |
 | 28 | `25b2c3a` | 修复：差分向量路径整数字面量 |
 | 29 | `b2434d9` | 发版 v0.2.0：新 API 文档、申报书同步与版本号 |
-| 30 | （本提交） | 申报书提交表勘误：补 dfd5220 行并对齐总数 |
+| 30 | `7f5ed91` | 申报书提交表勘误：补 dfd5220 行并对齐总数 |
+| 31 | `2f8ee18` | CI 强化：CLI 冒烟补全（--bioes/--nbest/错误退出）+ 每后端覆盖率门禁 |
+| 32 | （本提交） | 文档：CHANGELOG 与申报书同步第三档 CI 强化 |
 
 **质量证据**：36 个测试 × wasm/wasm-gc/js/native 四后端全过；`moon check --target all`
 四后端 0 警告；13 条独立 numpy 参考向量交叉验证（路径精确相等、数值误差 <1e-6）；
-库代码行覆盖率 100%；CI 含 fmt/check/接口/native 测试/参考可复现多道门禁；
+库代码行覆盖率 100%（wasm / wasm-gc / js 三后端分别验证，CI 每后端设门禁）；
+CI 含 fmt/check/接口/native 测试/参考可复现/覆盖率多道门禁，CLI 冒烟覆盖
+演示、JSON、BIO/BIOES 约束、n-best 与全部错误退出分支；
 另有手动触发的 torchcrf-diff job：真实 pytorch-crf（float64）5 条差分对拍，
 权重经导出脚本往返，最近一次运行 41/41 全过。
 mooncakes 已发布：https://mooncakes.io/docs/PaperY0/crf （`moon add PaperY0/crf`）。
