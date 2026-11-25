@@ -4,7 +4,10 @@
 
 ## 结论
 
-- **库代码（10 个 `.mbt` 源文件）：行覆盖率 100%**，无未覆盖行。
+- **库代码（10 个 `.mbt` 源文件）：行覆盖率 100%**，无未覆盖行；
+  该结论在 **wasm / wasm-gc / js 三后端分别验证**（本地各后端
+  `moon test --enable-coverage` + `moon coverage analyze` 均为库代码零未覆盖），
+  CI 对每个后端设覆盖率门禁：根目录 `.mbt` 出现未覆盖行即失败。
 - `cmd/main/main.mbt`（CLI，56 行）与 `examples/ner/main.mbt`（示例，9 行）
   不在单元测试覆盖内：二者由 CI 的四后端冒烟测试覆盖
   （无参演示、`--model/--emit` JSON 模式、`--bio` 约束、非法选项非零退出、示例实体断言）。
@@ -28,5 +31,5 @@
 ```bash
 moon test                      # 36/36（wasm）
 moon test --target wasm-gc,js  # 36/36 × 2
-moon coverage analyze > uncovered.log
+moon test --target <t> --enable-coverage && moon coverage analyze  # 逐后端覆盖率
 ```

@@ -35,7 +35,20 @@ jobs:
         run: moon check
 
       - name: Test (${{ matrix.target }})
-        run: moon test --target ${{ matrix.target }}
+        run: moon test --target ${{ matrix.target }} --enable-coverage
+
+      - name: Coverage gate (${{ matrix.target }})
+        run: |
+          moon coverage analyze > uncovered.txt
+          # 库代码（根目录 .mbt）必须零未覆盖行；CLI 与示例由冒烟覆盖，允许位于子目录。
+          python3 - <<'EOF'
+          import re
+          text = open("uncovered.txt").read()
+          files = re.findall(r"uncovered line\(s\) in (.+):", text)
+          bad = [f for f in files if "/" not in f.replace("\\", "/")]
+          assert not bad, f"library lines uncovered on this backend: {bad}"
+          print(f"coverage gate OK ({len(files)} non-library file(s) with uncovered lines)")
+          EOF
 
       - name: CLI smoke test (${{ matrix.target }})
         run: |
@@ -52,6 +65,14 @@ jobs:
             --model '{"num_tags":3,"start_transitions":[0.0,0.0,0.0],"end_transitions":[0.0,0.0,0.0],"transitions":[[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]]}' \
             --emit '[[5.0,0.0,0.0],[0.0,0.0,5.0]]' --bio 'O,B-PER,I-PER' > cli-bio.txt
           python3 -c 't=open("cli-bio.txt").read(); assert "O O" in t and "confidence" in t'
+          # BIOES 约束模式：单 token 应解码为 S-PER。
+          moon run --target ${{ matrix.target }} cmd/main -- \
+            --model '{"num_tags":5,"start_transitions":[0.0,0.0,0.0,0.0,0.0],"end_transitions":[0.0,0.0,0.0,0.0,0.0],"transitions":[[0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0]]}' \
+            --emit '[[0.0,0.0,0.0,0.0,5.0]]' --bioes 'O,B-PER,I-PER,E-PER,S-PER' > cli-bioes.txt
+          python3 -c 'assert "S-PER" in open("cli-bioes.txt").read()'
+          # --nbest：演示应输出 top-5 候选。
+          moon run --target ${{ matrix.target }} cmd/main -- --nbest 5 > cli-nbest.txt
+          python3 -c 'assert "top-5" in open("cli-nbest.txt").read()'
           # 非法选项：必须非零退出，且输出含 error:。
           if moon run --target ${{ matrix.target }} cmd/main -- --bogus > cli-err.txt 2> cli-err.log; then
             echo "invalid CLI arguments unexpectedly succeeded"
@@ -61,6 +82,15 @@ jobs:
           # examples/ner 端到端示例冒烟。
           moon run --target ${{ matrix.target }} examples/ner > example.txt
           python3 -c 't=open("example.txt").read(); assert "Sherry -> B-PER" in t and "Qingdao -> B-LOC" in t'
+          # 非法 --nbest 与互斥约束选项：必须非零退出。
+          if moon run --target ${{ matrix.target }} cmd/main -- --nbest 0 > /dev/null 2>&1; then
+            echo "--nbest 0 unexpectedly succeeded"
+            exit 1
+          fi
+          if moon run --target ${{ matrix.target }} cmd/main -- --bio 'O,B-PER,I-PER' --bioes 'O,B-PER,I-PER,E-PER,S-PER' > /dev/null 2>&1; then
+            echo "mutually exclusive --bio/--bioes unexpectedly succeeded"
+            exit 1
+          fi
 
   # native 后端在 Linux 上单独验证（gcc 头文件齐全）；Windows 本地
   # msys2 缺 SO_REUSE_MULTICASTPORT 属环境问题，不影响此处结论。
