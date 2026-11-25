@@ -66,6 +66,25 @@ MoonBit 生态里**没有线性链 CRF 推理库**。三轮查重确认空白：
 > **不转置**。但 **PyTorch 官方 NLP 教程**（`advanced_tutorial.py`）用的是**转置约定**
 > （`P_{j,k}` = k→j）；若你的权重来自该教程，导入前需先转置 `transitions`。
 
+## 安装
+
+已发布到 mooncakes（当前版本 0.2.0）：
+
+```bash
+moon add PaperY0/crf
+```
+
+在你的包的 `moon.pkg` 中导入：
+
+```
+import {
+  "PaperY0/crf" @crf,
+}
+```
+
+工具链要求：**moonc ≥ 0.10.16**；本仓库由 `.moonbit-version` 钉住 `0.10.22+124d61d05`，
+CI 用同一版本安装，保证可复现。
+
 ## 快速开始
 
 ```moonbit nocheck
@@ -268,6 +287,12 @@ linear-chain CRF inference library in the MoonBit ecosystem. The closest package
 normalized transitions, not a discriminative CRF that scores tag sequences given arbitrary
 encoder emissions. This library fills the "run a trained CRF's structured inference in MoonBit"
 gap, ideal for deploying PyTorch BiLSTM-CRF / BERT-CRF taggers to wasm / edge targets.
+
+**Install** (published on mooncakes; requires moonc ≥ 0.10.16, pinned to 0.10.22 via `.moonbit-version`):
+
+```bash
+moon add PaperY0/crf
+```
 
 ```moonbit nocheck
 let crf = @crf.Crf::from_json(model_json) catch { e => panic() }

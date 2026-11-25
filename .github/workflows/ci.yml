@@ -34,6 +34,9 @@ jobs:
       - name: Check
         run: moon check
 
+      - name: Build (${{ matrix.target }})
+        run: moon build --target ${{ matrix.target }}
+
       - name: Test (${{ matrix.target }})
         run: moon test --target ${{ matrix.target }} --enable-coverage
 
@@ -111,6 +114,9 @@ jobs:
 
       - name: Check (native)
         run: moon check --target native
+
+      - name: Build (native)
+        run: moon build --target native
 
       - name: Test (native)
         run: moon test --target native
