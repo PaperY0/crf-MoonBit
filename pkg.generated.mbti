@@ -25,6 +25,12 @@ pub fn CrfError::message(Self) -> String
 
 // Types and methods
 #derive(Eq, @debug.Debug)
+pub struct Confidence {
+  max_prob : Array[Double]
+  entropy : Array[Double]
+}
+
+#derive(Eq, @debug.Debug)
 pub struct Constraints {
   start : Array[Bool]
   end : Array[Bool]
@@ -39,6 +45,7 @@ pub struct Crf {
   end_transitions : Array[Double]
   transitions : Array[Array[Double]]
 }
+pub fn Crf::confidence(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Confidence raise CrfError
 pub fn Crf::decode(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Int32] raise CrfError
 pub fn Crf::decode_batch(Self, Array[Array[Array[Double]]], Array[Array[Bool]]?, Constraints?) -> Array[Array[Int32]] raise CrfError
 pub fn Crf::from_json(String) -> Self raise CrfError
