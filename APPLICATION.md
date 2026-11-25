@@ -146,7 +146,7 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 
 **仓库**：https://github.com/PaperY0/crf-MoonBit （公开，CI 全绿）
 
-共 **28 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
+共 **30 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
 无意义拆分或重复提交：
 
 | # | 提交 | 内容 |
@@ -168,17 +168,19 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 | 15 | `d54ffde` | 文档：README API 类型对齐 Int32 签名；申报书提交哈希补全 |
 | 16 | `9ad8e22` | 元数据：刷新 moon.mod 描述与可检索关键词 |
 | 17 | `0d68e69` | 文档：测试计数同步 30，记录 native CI、输入守卫与元数据刷新 |
-| 18 | `a00b328` | 文档：申报书提交数与 git 历史对齐 |
-| 19 | `8fe600e` | 发版 v0.1.2：非有限输入守卫、非前缀掩码测试、native CI |
-| 20 | `3f9cae6` | 新功能：marginals_batch / confidence_batch（含等价性与错误分支测试） |
-| 21 | `d9863f6` | 新功能：decode_labels / DecodedPath::labels 标签名接口（含测试） |
-| 22 | `e19fcd9` | examples/ner 端到端示例 + CI 四后端冒烟 |
-| 23 | `ef66962` | 性能基准：moon bench 多规模基准 + BENCH.md 参考数据 |
-| 24 | `0e9ea45` | torchcrf-diff 手动 CI job：真实 pytorch-crf 差分对拍 |
-| 25 | `75452ee` | 修复：差分脚本 padding 位 tags 补齐 |
-| 26 | `702666b` | 修复：torchcrf 内部方法 seq-first 布局转置 |
-| 27 | `25b2c3a` | 修复：差分向量路径整数字面量 |
-| 28 | （本提交） | 发版 v0.2.0：新 API 文档、申报书同步与版本号 |
+| 18 | `dfd5220` | 文档：申报书提交表记录文档同步提交 |
+| 19 | `a00b328` | 文档：申报书提交数与 git 历史对齐 |
+| 20 | `8fe600e` | 发版 v0.1.2：非有限输入守卫、非前缀掩码测试、native CI |
+| 21 | `3f9cae6` | 新功能：marginals_batch / confidence_batch（含等价性与错误分支测试） |
+| 22 | `d9863f6` | 新功能：decode_labels / DecodedPath::labels 标签名接口（含测试） |
+| 23 | `e19fcd9` | examples/ner 端到端示例 + CI 四后端冒烟 |
+| 24 | `ef66962` | 性能基准：moon bench 多规模基准 + BENCH.md 参考数据 |
+| 25 | `0e9ea45` | torchcrf-diff 手动 CI job：真实 pytorch-crf 差分对拍 |
+| 26 | `75452ee` | 修复：差分脚本 padding 位 tags 补齐 |
+| 27 | `702666b` | 修复：torchcrf 内部方法 seq-first 布局转置 |
+| 28 | `25b2c3a` | 修复：差分向量路径整数字面量 |
+| 29 | `b2434d9` | 发版 v0.2.0：新 API 文档、申报书同步与版本号 |
+| 30 | （本提交） | 申报书提交表勘误：补 dfd5220 行并对齐总数 |
 
 **质量证据**：36 个测试 × wasm/wasm-gc/js/native 四后端全过；`moon check --target all`
 四后端 0 警告；13 条独立 numpy 参考向量交叉验证（路径精确相等、数值误差 <1e-6）；
