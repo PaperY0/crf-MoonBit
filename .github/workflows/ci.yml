@@ -59,6 +59,29 @@ jobs:
           fi
           python3 -c 'from pathlib import Path; assert "error:" in Path("cli-err.txt").read_text()+Path("cli-err.log").read_text()'
 
+  # native 后端在 Linux 上单独验证（gcc 头文件齐全）；Windows 本地
+  # msys2 缺 SO_REUSE_MULTICASTPORT 属环境问题，不影响此处结论。
+  build-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Versions
+        run: |
+          moon version --all
+          moon update
+
+      - name: Check (native)
+        run: moon check --target native
+
+      - name: Test (native)
+        run: moon test --target native
+
   # `moon info` 生成的接口若与提交不一致，说明 .mbti 忘了更新。
   interface:
     runs-on: ubuntu-latest
