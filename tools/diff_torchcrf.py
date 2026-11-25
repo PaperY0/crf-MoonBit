@@ -64,9 +64,11 @@ def main():
             )
             weights = json.loads(js.read_text(encoding="utf-8"))
         path = [int(v) for v in crf.decode(emit, mask)[0]]
-        tags_t = torch.tensor([path], dtype=torch.long)
-        score = float(crf._compute_score(emit, tags_t, mask)[0])
-        logz = float(crf._compute_normalizer(emit, mask)[0])
+        # _compute_score 要求 tags 与 emissions 同形；padding 位补 0，由 mask 剔除。
+        tags_full = path + [0] * (t - len(path))
+        tags_t = torch.tensor([tags_full], dtype=torch.long)
+        score = float(crf._compute_score(emit, tags_t, mask)[0].detach())
+        logz = float(crf._compute_normalizer(emit, mask)[0].detach())
         mask_lit = (
             "Some([" + ", ".join("true" if b else "false" for b in mask[0]) + "])"
             if padded
