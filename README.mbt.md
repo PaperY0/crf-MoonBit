@@ -47,6 +47,7 @@ let top3 = crf.nbest(emissions, None, Some(ca), 3) catch { e => panic() }
 
 - `Crf::new` / `Crf::uniform` / `Crf::from_json` / `Crf::to_json`
 - `Crf::decode` / `Crf::viterbi` / `Crf::nbest`
+- `Crf::posterior_decode` / `Crf::validate_path` / `Crf::confidence`
 - `Crf::log_partition` / `Crf::marginals`
 - `Crf::score_path` / `Crf::log_likelihood` / `Crf::decode_batch`
 - `bio_mask` / `bioes_mask` / `Constraints::allow_all`
@@ -54,9 +55,9 @@ let top3 = crf.nbest(emissions, None, Some(ca), 3) catch { e => panic() }
 
 ## 正确性 / Correctness
 
-与独立 numpy 参考实现（精确复刻 torchcrf 递推）交叉对拍：10 条固定种子向量，Viterbi 路径精确相等、
-score / log Z / 边际误差 < 1e-6。**12 个测试在 wasm / wasm-gc / js 三后端全过**，
-`moon check --target all` 四后端 0 警告。
+与独立 numpy 参考实现（精确复刻 torchcrf 递推）交叉对拍：13 条固定种子向量（7 无约束 + 3 BIO + 3 BIOES），
+Viterbi 路径精确相等、score / log Z / 边际误差 < 1e-6。**28 个测试在 wasm / wasm-gc / js 三后端全过**，
+库代码行覆盖率 100%，`moon check --target all` 四后端 0 警告。
 
 非目标：神经网络前向、CRF 训练、高阶 / 树状 CRF。推理-only。
 

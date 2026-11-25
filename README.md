@@ -31,6 +31,9 @@ MoonBit 生态里**没有线性链 CRF 推理库**。三轮查重确认空白：
 - **边际概率** `marginals`：前向–后向算法求每个位置每个标签的 P(y_t = j | x)
 - **路径打分** `score_path` 与**条件对数似然** `log_likelihood`（= score − log Z ≤ 0）
 - **批解码** `decode_batch`
+- **后验解码** `posterior_decode`：逐位置边际最大（MBR 准则），与 Viterbi 全局最优互补；
+  `validate_path` 校验任意路径在约束下的合法性
+- **置信度** `confidence`：逐位置最大边际概率 + Shannon 熵，用于低置信筛查与人工复核分流
 - **结构约束** `bio_mask` / `bioes_mask`：从标签名（如 `B-PER`/`I-PER`）自动生成合法转移掩码；
   也可用 `Constraints` 自定义任意 start/end/transition 布尔掩码
 - **变长掩码** `mask`：padding 位置不参与计算，等价于截断到有效长度
@@ -110,6 +113,10 @@ pub fn Crf::marginals(Crf, emissions, mask?, ca?) -> Array[Array[Double]] raise 
 pub fn Crf::score_path(Crf, emissions, path : Array[Int], mask?) -> Double raise CrfError
 pub fn Crf::log_likelihood(Crf, emissions, path, mask?, ca?) -> Double raise CrfError
 pub fn Crf::decode_batch(Crf, batch, masks?, ca?) -> Array[Array[Int]] raise CrfError
+pub fn Crf::posterior_decode(Crf, emissions, mask?, ca?) -> Array[Int] raise CrfError
+pub fn Crf::validate_path(Crf, path : Array[Int], ca?) -> Bool raise CrfError
+pub fn Crf::confidence(Crf, emissions, mask?, ca?) -> Confidence raise CrfError
+pub struct Confidence { max_prob : Array[Double]; entropy : Array[Double] }
 
 // 约束
 pub struct Constraints { start : Array[Bool]; end : Array[Bool]; transitions : Array[Array[Bool]] }
@@ -132,8 +139,9 @@ pub suberror CrfError { InvalidShape(String); EmptySequence; InvalidTags(String)
 不靠"看起来对"，而是**与一个独立的 numpy 参考实现交叉对拍**：
 
 - `tools/gen_vectors.py` 用 numpy **精确复刻 torchcrf 的前向 / Viterbi / 前向–后向递推**，
-  生成 **10 条参考向量**：7 条无约束（K∈{2,3,4,5}，T∈{1,2,3,5,6,8,12}）+ 3 条 BIO 约束
-  （T∈{5,7,9}，标签 `O/B-PER/I-PER/B-LOC/I-LOC`），固定随机种子 20261125。
+  生成 **13 条参考向量**：7 条无约束（K∈{2,3,4,5}，T∈{1,2,3,5,6,8,12}）+ 3 条 BIO 约束
+  （T∈{5,7,9}）+ 3 条 BIOES 约束（T∈{4,6,8}，标签 `O/B-PER/I-PER/E-PER/S-PER`），
+  固定随机种子 20261125。
   所有输入/输出统一量化到 **10 位有效数字**（远小于 1e-6 断言容差），消除跨平台 libm 的
   末位 ULP 噪声，保证 Windows / Linux 逐字节可复现；CI 钉住 numpy 版本。
 - `reference_vectors_wbtest.mbt` 把这些向量转成 MoonBit 白盒测试，逐条断言：
@@ -142,12 +150,13 @@ pub suberror CrfError { InvalidShape(String); EmptySequence; InvalidTags(String)
 - 另有手写不变量测试：零权重模型退化为逐位置 softmax、BIO 禁止非法 I-after-O、
   n-best 首条等于 Viterbi 且降序、mask padding 等价、JSON 往返、错误路径。
 
-**12 个测试在 wasm / wasm-gc / js 三后端全部通过**，`moon check --target all` 四后端 0 警告。
+**28 个测试在 wasm / wasm-gc / js 三后端全部通过**，`moon check --target all` 四后端 0 警告；
+**库代码行覆盖率 100%**（见 [`COVERAGE.md`](COVERAGE.md)，CLI 由 CI 冒烟覆盖）。
 
 ```bash
-moon test --target wasm     # 12/12
-moon test --target wasm-gc  # 12/12
-moon test --target js       # 12/12
+moon test --target wasm     # 28/28
+moon test --target wasm-gc  # 28/28
+moon test --target js       # 28/28
 python tools/gen_vectors.py # 重新生成参考向量（CI 校验逐字节可复现）
 ```
 
@@ -159,8 +168,12 @@ python tools/gen_vectors.py # 重新生成参考向量（CI 校验逐字节可�
 ```bash
 moon run cmd/main                 # 内置 BIO 命名实体识别演示
 moon run cmd/main -- --model "<crf-json>" --emit "[[1.0,0.0],[0.0,2.0]]"
+moon run cmd/main -- --model "<crf-json>" --emit "<json>" --bio "O,B-PER,I-PER" --nbest 5
 moon run cmd/main -- --help
 ```
+
+`--bio` / `--bioes` 接逗号分隔标签名（互斥），`--nbest` 指定候选条数；
+输出含解码路径、标签名、score / log Z / log L、逐位置边际与置信度（max_prob / 熵）、n-best 候选。
 
 演示输出（节选）：
 
@@ -176,6 +189,18 @@ top-3 paths:
   [1 0 0 3]  score=6.8
   [1 1 0 3]  score=6.7
 ```
+
+## 三个使用场景
+
+1. **边缘端 / 浏览器序列标注部署**：PyTorch 训练 BiLSTM-CRF / BERT-CRF 命名实体识别模型，
+   `tools/export_torchcrf.py` 导出权重 JSON，MoonBit 编到 wasm / wasm-gc / js 做推理——
+   编码器输出发射分，本库负责结构化决策，BIO/BIOES 约束保证输出合法（不会出现 "I-PER 跟在 O 后"）。
+2. **RAG / 信息抽取的幻觉筛查**：对抽取出的标签序列用 `marginals` + `confidence` 计算逐位置
+   后验置信度与熵，低 max_prob / 高熵的位置标记为"模型不确定"，触发人工复核或拒答，
+   而不是把低置信抽取结果直接写进知识库。
+3. **候选重排与人工分流**：`nbest` 给出精确的前 n 条合法路径及分数，供下游重排器
+   （规则 / 小模型 / 人工）在多个候选间选择；`posterior_decode` 提供 MBR 准则的第二意见，
+   `validate_path` 对外部系统产生的路径做合法性把关。
 
 ## 非目标（明确不做）
 
@@ -241,10 +266,12 @@ first if your weights come from it. Emissions `[T][K]` are supplied by your enco
 in the CRF weights. This library does inference only — no neural forward pass, no training.
 
 **Correctness** is cross-validated against an independent numpy reference that replicates
-torchcrf's forward / Viterbi / forward–backward recursions: 10 fixed-seed vectors (7 unconstrained
-+ 3 BIO-constrained) assert exact Viterbi paths and score / log Z / marginals within 1e-6.
-**12 tests pass on wasm, wasm-gc and js**; `moon check --target all` is warning-free on all four
-backends. Native test execution needs a working C toolchain for the MoonBit runtime (a Windows
+torchcrf's forward / Viterbi / forward–backward recursions: 13 fixed-seed vectors (7 unconstrained
++ 3 BIO + 3 BIOES) assert exact Viterbi paths and score / log Z / marginals within 1e-6.
+Beyond Viterbi, the library offers posterior (marginal-argmax) decoding, path validation,
+per-position confidence (max marginal probability and Shannon entropy), and exact n-best.
+**28 tests pass on wasm, wasm-gc and js** with 100% library line coverage;
+`moon check --target all` is warning-free on all four backends. Native test execution needs a working C toolchain for the MoonBit runtime (a Windows
 msys2 header issue is unrelated to this library); CI covers the three portable backends on ubuntu.
 
 MIT licensed. See the Chinese section above for the full API, CLI usage and development notes.
