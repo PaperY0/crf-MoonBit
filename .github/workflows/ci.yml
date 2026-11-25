@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # check/test/format 三件套，跨三个后端跑测试。
+  # 工具链版本统一由 .moonbit-version 指定。
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [wasm, wasm-gc, js]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Versions
+        run: |
+          moon version --all
+          moon update
+
+      - name: Format check
+        run: moon fmt --check
+
+      - name: Check
+        run: moon check
+
+      - name: Test (${{ matrix.target }})
+        run: moon test --target ${{ matrix.target }}
+
+      - name: CLI smoke test (${{ matrix.target }})
+        run: |
+          # 无参演示：应打印解码路径与 BIO 标签名。
+          moon run --target ${{ matrix.target }} cmd/main > cli-demo.txt
+          python3 -c 't=open("cli-demo.txt").read(); assert "decoded path" in t and "B-PER" in t'
+          # JSON 模式：2 标签零权重模型 + 发射分，最优路径应为 1 0。
+          moon run --target ${{ matrix.target }} cmd/main -- \
+            --model '{"num_tags":2,"start_transitions":[0.0,0.0],"end_transitions":[0.0,0.0],"transitions":[[0.0,0.0],[0.0,0.0]]}' \
+            --emit '[[0.0,1.0],[2.0,0.0]]' > cli-json.txt
+          python3 -c 'assert "1 0" in open("cli-json.txt").read()'
+          # 非法选项：必须非零退出，且输出含 error:。
+          if moon run --target ${{ matrix.target }} cmd/main -- --bogus > cli-err.txt 2> cli-err.log; then
+            echo "invalid CLI arguments unexpectedly succeeded"
+            exit 1
+          fi
+          python3 -c 'from pathlib import Path; assert "error:" in Path("cli-err.txt").read_text()+Path("cli-err.log").read_text()'
+
+  # `moon info` 生成的接口若与提交不一致，说明 .mbti 忘了更新。
+  interface:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+      - name: moon info + fmt (must be a no-op)
+        run: |
+          moon info
+          moon fmt
+          git diff --exit-code -- '*.mbti' '*.mbt'
+
+  # 独立 numpy 参考实现必须可复现：重新生成的向量与提交逐字节一致，
+  # 且 MoonBit 侧交叉断言全部通过。
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+      - name: Install numpy
+        run: python -m pip install numpy
+      - name: Regenerate reference vectors (must be a no-op)
+        run: |
+          python tools/gen_vectors.py
+          moon fmt
+          git diff --exit-code -- reference_vectors_wbtest.mbt data/reference_vectors.json
+      - name: Cross-validation tests
+        run: moon test --target wasm

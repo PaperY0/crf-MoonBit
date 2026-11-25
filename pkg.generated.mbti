@@ -1,0 +1,64 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "PaperY0/crf"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn bio_mask(Array[String]) -> Constraints raise CrfError
+
+pub fn bioes_mask(Array[String]) -> Constraints raise CrfError
+
+pub fn logsumexp(Array[Double]) -> Double
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror CrfError {
+  InvalidShape(String)
+  EmptySequence
+  InvalidTags(String)
+  InvalidConstraint(String)
+  JsonError(String)
+}
+pub fn CrfError::message(Self) -> String
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub struct Constraints {
+  start : Array[Bool]
+  end : Array[Bool]
+  transitions : Array[Array[Bool]]
+}
+pub fn Constraints::allow_all(Int32) -> Self
+
+#derive(Eq, @debug.Debug)
+pub struct Crf {
+  num_tags : Int32
+  start_transitions : Array[Double]
+  end_transitions : Array[Double]
+  transitions : Array[Array[Double]]
+}
+pub fn Crf::decode(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Int32] raise CrfError
+pub fn Crf::decode_batch(Self, Array[Array[Array[Double]]], Array[Array[Bool]]?, Constraints?) -> Array[Array[Int32]] raise CrfError
+pub fn Crf::from_json(String) -> Self raise CrfError
+pub fn Crf::log_likelihood(Self, Array[Array[Double]], Array[Int32], Array[Bool]?, Constraints?) -> Double raise CrfError
+pub fn Crf::log_partition(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Double raise CrfError
+pub fn Crf::marginals(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Array[Double]] raise CrfError
+pub fn Crf::nbest(Self, Array[Array[Double]], Array[Bool]?, Constraints?, Int32) -> Array[DecodedPath] raise CrfError
+pub fn Crf::new(Int32, Array[Double], Array[Double], Array[Array[Double]]) -> Self raise CrfError
+pub fn Crf::score_path(Self, Array[Array[Double]], Array[Int32], Array[Bool]?) -> Double raise CrfError
+pub fn Crf::tag_count(Self) -> Int32
+pub fn Crf::to_json(Self) -> String
+pub fn Crf::uniform(Int32) -> Self raise CrfError
+pub fn Crf::viterbi(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> DecodedPath raise CrfError
+
+#derive(Eq, @debug.Debug)
+pub struct DecodedPath {
+  tags : Array[Int32]
+  score : Double
+}
+
+// Type aliases
+
+// Traits

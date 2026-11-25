@@ -1,0 +1,7 @@
+import {
+  "PaperY0/crf" @lib,
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+}
+
+pkgtype(kind: "executable")
