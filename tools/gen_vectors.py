@@ -125,6 +125,22 @@ def bio_mask(tags):
     return sa, ea, ta
 
 
+def bioes_mask(tags):
+    K = len(tags)
+    pref = [t.split("-")[0] for t in tags]
+    typ = [t.split("-", 1)[1] if "-" in t else "" for t in tags]
+    complete = [p in ("E", "S", "O") for p in pref]
+    sa = np.array([p in ("B", "S", "O") for p in pref])
+    ea = np.array(complete)
+    ta = np.array([
+        [((pref[i] in ("B", "I")) and typ[i] == typ[j])
+         if pref[j] in ("I", "E") else complete[i]
+         for j in range(K)]
+        for i in range(K)
+    ])
+    return sa, ea, ta
+
+
 def fmt_double(x):
     return repr(q(x))
 
@@ -159,7 +175,7 @@ def main():
         lz = forward_logz(start, end, trans, emit)
         mg = marginals(start, end, trans, emit)
         cases.append(dict(name=f"u_k{K}_l{L}", K=K, start=start, end=end, trans=trans,
-                          emit=emit, bio=False, tags=[], path=path, score=sc, logz=lz, mg=mg))
+                          emit=emit, scheme="none", tags=[], path=path, score=sc, logz=lz, mg=mg))
 
     # BIO-constrained NER cases.
     bio_tags = ["O", "B-PER", "I-PER", "B-LOC", "I-LOC"]
@@ -175,7 +191,23 @@ def main():
         lz = forward_logz(start, end, trans, emit, ca)
         mg = marginals(start, end, trans, emit, ca)
         cases.append(dict(name=f"bio_l{L}", K=K, start=start, end=end, trans=trans,
-                          emit=emit, bio=True, tags=bio_tags, path=path, score=sc, logz=lz, mg=mg))
+                          emit=emit, scheme="bio", tags=bio_tags, path=path, score=sc, logz=lz, mg=mg))
+
+    # BIOES-constrained NER cases (B/I/E/S/O scheme).
+    bioes_tags = ["O", "B-PER", "I-PER", "E-PER", "S-PER"]
+    for (L, seed) in [(4, 11), (6, 12), (8, 13)]:
+        r = np.random.default_rng(seed)
+        K = len(bioes_tags)
+        start = qa(r.normal(0, 0.5, K))
+        end = qa(r.normal(0, 0.5, K))
+        trans = qm(r.normal(0, 0.8, (K, K)))
+        emit = qm(r.normal(0, 1.2, (L, K)))
+        ca = bioes_mask(bioes_tags)
+        path, sc = viterbi(start, end, trans, emit, ca)
+        lz = forward_logz(start, end, trans, emit, ca)
+        mg = marginals(start, end, trans, emit, ca)
+        cases.append(dict(name=f"bioes_l{L}", K=K, start=start, end=end, trans=trans,
+                          emit=emit, scheme="bioes", tags=bioes_tags, path=path, score=sc, logz=lz, mg=mg))
 
     # Emit MoonBit whitebox test data.
     lines = []
@@ -190,7 +222,7 @@ def main():
     lines.append("  end : Array[Double]")
     lines.append("  trans : Array[Array[Double]]")
     lines.append("  emissions : Array[Array[Double]]")
-    lines.append("  use_bio : Bool")
+    lines.append("  scheme : String")
     lines.append("  tags : Array[String]")
     lines.append("  expected_path : Array[Int]")
     lines.append("  expected_score : Double")
@@ -208,7 +240,7 @@ def main():
         lines.append("    end: %s," % fmt_arr(c["end"]))
         lines.append("    trans: %s," % fmt_mat(c["trans"]))
         lines.append("    emissions: %s," % fmt_mat(c["emit"]))
-        lines.append("    use_bio: %s," % ("true" if c["bio"] else "false"))
+        lines.append('    scheme: "%s",' % c["scheme"])
         lines.append("    tags: %s," % fmt_str_arr(c["tags"]))
         lines.append("    expected_path: %s," % fmt_int_arr(c["path"]))
         lines.append("    expected_score: %s," % fmt_double(c["score"]))
@@ -228,7 +260,7 @@ def main():
                            end_transitions=c["end"].tolist(),
                            transitions=c["trans"].tolist(),
                            emissions=c["emit"].tolist(),
-                           use_bio=c["bio"], tags=c["tags"],
+                           scheme=c["scheme"], tags=c["tags"],
                            expected_path=c["path"], expected_score=q(c["score"]),
                            expected_logz=q(c["logz"]),
                            expected_marginals=[[q(x) for x in row] for row in c["mg"].tolist()]))

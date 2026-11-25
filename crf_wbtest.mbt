@@ -12,10 +12,10 @@ test "cross-validate against independent numpy reference" {
     let crf = Crf::new(c.num_tags, c.start, c.end, c.trans) catch {
       e => fail(e.message())
     }
-    let ca : Constraints? = if c.use_bio {
-      Some(bio_mask(c.tags) catch { e => fail(e.message()) })
-    } else {
-      None
+    let ca : Constraints? = match c.scheme {
+      "bio" => Some(bio_mask(c.tags) catch { e => fail(e.message()) })
+      "bioes" => Some(bioes_mask(c.tags) catch { e => fail(e.message()) })
+      _ => None
     }
     let path = crf.decode(c.emissions, None, ca) catch {
       e => fail(e.message())
