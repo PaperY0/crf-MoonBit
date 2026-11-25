@@ -12,6 +12,11 @@ keywords = [
   "crf",
   "conditional-random-field",
   "viterbi",
+  "posterior-decoding",
+  "mbr",
+  "marginals",
+  "confidence",
+  "entropy",
   "sequence-labeling",
   "ner",
   "forward-backward",
@@ -20,4 +25,4 @@ keywords = [
 
 preferred_target = "wasm"
 
-description = "Pure-MoonBit linear-chain CRF inference: Viterbi decoding with BIO/BIOES constraints, forward log-partition, forward-backward marginals, n-best, torchcrf-compatible weight I/O."
+description = "Pure-MoonBit linear-chain CRF inference: Viterbi and posterior (MBR) decoding, exact n-best, forward log-partition, forward-backward marginals, per-position confidence (max marginal + Shannon entropy), BIO/BIOES constraints, path validation, torchcrf-compatible weight I/O."
