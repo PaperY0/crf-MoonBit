@@ -86,7 +86,7 @@ def main():
             f"  let emit = {arr2(emit[0].tolist())}",
             f"  let mask : Array[Bool]? = {mask_lit}",
             "  let path = crf.decode(emit, mask, None) catch { e => fail(e.message()) }",
-            f"  assert_eq(path, {arr(path)})",
+            "  assert_eq(path, [" + ", ".join(str(v) for v in path) + "])",
             "  let vp = crf.viterbi(emit, mask, None) catch { e => fail(e.message()) }",
             f'  close(vp.score, {q(score)!r}, "torchcrf score")',
             "  let lz = crf.log_partition(emit, mask, None) catch { e => fail(e.message()) }",
