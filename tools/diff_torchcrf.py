@@ -67,8 +67,12 @@ def main():
         # _compute_score 要求 tags 与 emissions 同形；padding 位补 0，由 mask 剔除。
         tags_full = path + [0] * (t - len(path))
         tags_t = torch.tensor([tags_full], dtype=torch.long)
-        score = float(crf._compute_score(emit, tags_t, mask)[0].detach())
-        logz = float(crf._compute_normalizer(emit, mask)[0].detach())
+        # 内部方法恒为 seq-first 布局（batch_first 只影响公开 API），需转置。
+        emit_sf = emit.transpose(0, 1).contiguous()
+        mask_sf = mask.transpose(0, 1).contiguous()
+        tags_sf = tags_t.transpose(0, 1).contiguous()
+        score = float(crf._compute_score(emit_sf, tags_sf, mask_sf)[0].detach())
+        logz = float(crf._compute_normalizer(emit_sf, mask_sf)[0].detach())
         mask_lit = (
             "Some([" + ", ".join("true" if b else "false" for b in mask[0]) + "])"
             if padded
