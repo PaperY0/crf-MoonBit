@@ -150,13 +150,13 @@ pub suberror CrfError { InvalidShape(String); EmptySequence; InvalidTags(String)
 - 另有手写不变量测试：零权重模型退化为逐位置 softmax、BIO 禁止非法 I-after-O、
   n-best 首条等于 Viterbi 且降序、mask padding 等价、JSON 往返、错误路径。
 
-**28 个测试在 wasm / wasm-gc / js 三后端全部通过**，`moon check --target all` 四后端 0 警告；
+**30 个测试在 wasm / wasm-gc / js 三后端全部通过**，`moon check --target all` 四后端 0 警告；
 **库代码行覆盖率 100%**（见 [`COVERAGE.md`](COVERAGE.md)，CLI 由 CI 冒烟覆盖）。
 
 ```bash
-moon test --target wasm     # 28/28
-moon test --target wasm-gc  # 28/28
-moon test --target js       # 28/28
+moon test --target wasm     # 30/30
+moon test --target wasm-gc  # 30/30
+moon test --target js       # 30/30
 python tools/gen_vectors.py # 重新生成参考向量（CI 校验逐字节可复现）
 ```
 
@@ -224,7 +224,8 @@ moon run cmd/main   # CLI 演示
 > native 上同样通过。native 的**测试执行**需要可用的 C 工具链来编译 MoonBit runtime；
 > 在 Windows + msys2(ucrt64) 上，需把 `C:\msys64\ucrt64\bin` 加入 PATH，且当前 msys2 头文件
 > 缺少 `SO_REUSE_MULTICASTPORT` 会导致 runtime 的 `socket.c` 编译失败——这是工具链问题，
-> 与本库无关。CI 在 ubuntu 上运行 wasm / wasm-gc / js 三后端测试矩阵。
+> 与本库无关。CI 在 ubuntu 上运行 wasm / wasm-gc / js 三后端测试矩阵，
+> 并单独为 native 后端跑 check 与测试。
 
 ## 许可
 
@@ -270,8 +271,8 @@ torchcrf's forward / Viterbi / forward–backward recursions: 13 fixed-seed vect
 + 3 BIO + 3 BIOES) assert exact Viterbi paths and score / log Z / marginals within 1e-6.
 Beyond Viterbi, the library offers posterior (marginal-argmax) decoding, path validation,
 per-position confidence (max marginal probability and Shannon entropy), and exact n-best.
-**28 tests pass on wasm, wasm-gc and js** with 100% library line coverage;
-`moon check --target all` is warning-free on all four backends. Native test execution needs a working C toolchain for the MoonBit runtime (a Windows
-msys2 header issue is unrelated to this library); CI covers the three portable backends on ubuntu.
+**30 tests pass on wasm, wasm-gc, js, and native (ubuntu CI)** with 100% library line coverage;
+`moon check --target all` is warning-free on all four backends. Local native test execution needs a working C toolchain for the MoonBit runtime (a Windows
+msys2 header issue is unrelated to this library); CI also covers native on ubuntu.
 
 MIT licensed. See the Chinese section above for the full API, CLI usage and development notes.

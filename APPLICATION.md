@@ -15,7 +15,7 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 全程 log 域计算、纯函数式无 IO，权重 JSON 与 PyTorch 生态的 pytorch-crf 互通：
 **训练在 PyTorch 完成，推理部署到 MoonBit 的 wasm / wasm-gc / js / native 四后端**，
 覆盖浏览器、边缘设备与服务端。正确性由独立 numpy 参考实现的 13 条交叉验证向量、
-20 个伪随机模型的性质测试与 100% 库代码行覆盖率共同保证（28 个测试三后端全过）。
+20 个伪随机模型的性质测试与 100% 库代码行覆盖率共同保证（30 个测试三后端全过）。
 
 ## 3. 项目方向与通用性说明
 
@@ -31,7 +31,7 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 - **语言无关**：约束掩码由标签名自动生成（BIO/BIOES），中文、英文或任何语言的
   标签体系均可；也支持完全自定义的 start/end/transition 布尔掩码。
 - **平台无关**：纯 MoonBit、无 IO、无后端特定代码，`moon check --target all`
-  四后端零警告，wasm / wasm-gc / js 三后端测试矩阵在 CI 全绿。
+  四后端零警告，wasm / wasm-gc / js / native 四后端测试在 CI 全绿。
 
 **生态定位（三轮查重确认的空白）**：对 mooncakes 注册表 3917 个模块全量关键词扫描、
 官方 `moon search crf` 实时深搜（返回 No modules found）、GitHub 交叉核验，
@@ -139,7 +139,7 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 
 **仓库**：https://github.com/PaperY0/crf-MoonBit （公开，CI 全绿）
 
-共 **11 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
+共 **16 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
 无意义拆分或重复提交：
 
 | # | 提交 | 内容 |
@@ -155,8 +155,13 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 | 9 | `a4dd9f4` | 文档：新 API、三个使用场景、28 测试与覆盖率说明 |
 | 10 | `e7899fa` | 发版 v0.1.1：版本号 + CHANGELOG |
 | 11 | `21fd476` | 项目申报书 APPLICATION.md |
+| 12 | `c020c19` | 加固：NaN/Inf 非有限输入守卫（权重/发射分在构造与推理期校验，含测试） |
+| 13 | `acc359b` | 测试：非前缀（头部/中间位置）padding 掩码等价性断言 |
+| 14 | `b2528e9` | CI：ubuntu 新增 native 后端 check 与测试岗位 |
+| 15 | `d54ffde` | 文档：README API 类型对齐 Int32 签名；申报书提交哈希补全 |
+| 16 | `9ad8e22` | 元数据：刷新 moon.mod 描述与可检索关键词 |
 
-**质量证据**：28 个测试 × wasm/wasm-gc/js 三后端全过；`moon check --target all`
+**质量证据**：30 个测试 × wasm/wasm-gc/js/native 四后端全过；`moon check --target all`
 四后端 0 警告；13 条独立 numpy 参考向量交叉验证（路径精确相等、数值误差 <1e-6）；
-库代码行覆盖率 100%；CI 含 fmt/check/接口/参考可复现四道门禁。
+库代码行覆盖率 100%；CI 含 fmt/check/接口/native 测试/参考可复现多道门禁。
 mooncakes 已发布：https://mooncakes.io/docs/PaperY0/crf （`moon add PaperY0/crf`）。

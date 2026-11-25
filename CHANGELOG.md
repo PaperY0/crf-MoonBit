@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### 加固
+- 输入守卫：构造模型与推理时校验权重 / 发射分均为有限数（非 NaN / ±Inf），
+  非有限值抛出 `InvalidShape`，不再静默传播成 NaN 边际。
+- 掩码测试补齐非前缀（头部、中间位置）padding 的等价性断言。
+- CI 新增 ubuntu native 后端 check 与测试岗位，四后端兼容性在 CI 坐实。
+
+### 文档与质量
+- README API 类型对齐 `moon info` 生成的 Int32 签名；申报书补齐提交哈希。
+- moon.mod 描述与关键词收录后验解码、边际、置信度、熵等可检索词。
+- 测试总数 30，wasm / wasm-gc / js 三后端全过。
+
 ## 0.1.1
 
 ### 新增
