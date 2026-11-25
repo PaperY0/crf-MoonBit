@@ -115,3 +115,21 @@ test "coverage: batch decode, allow_all, tag_count, message, logsumexp edges" {
   close(logsumexp([]), neg_inf, "empty logsumexp")
   close(logsumexp([neg_inf, neg_inf]), neg_inf, "all -inf logsumexp")
 }
+
+///|
+test "coverage: non-finite weights and emissions raise" {
+  let nan = @math.ln(-1.0)
+  let inf = @math.exp(1.0e308)
+  assert_true(
+    raises(() => Crf::new(2, [nan, 0.0], [0.0, 0.0], [[0.0, 0.0], [0.0, 0.0]])),
+  )
+  assert_true(
+    raises(() => Crf::new(2, [0.0, 0.0], [inf, 0.0], [[0.0, 0.0], [0.0, 0.0]])),
+  )
+  assert_true(
+    raises(() => Crf::new(2, [0.0, 0.0], [0.0, 0.0], [[nan, 0.0], [0.0, 0.0]])),
+  )
+  let crf = Crf::uniform(2) catch { e => fail(e.message()) }
+  assert_true(raises(() => crf.decode([[0.0, nan]], None, None)))
+  assert_true(raises(() => crf.decode([[inf, 0.0]], None, None)))
+}

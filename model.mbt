@@ -73,6 +73,11 @@ pub fn Crf::new(
       raise CrfError::InvalidShape("transitions row \{i} length != num_tags")
     }
   }
+  check_finite(start_transitions, "start_transitions")
+  check_finite(end_transitions, "end_transitions")
+  for i in 0..<num_tags {
+    check_finite(transitions[i], "transitions row \{i}")
+  }
   Crf::{ num_tags, start_transitions, end_transitions, transitions, }
 }
 
@@ -85,7 +90,17 @@ pub fn Crf::uniform(num_tags : Int32) -> Crf raise CrfError {
 }
 
 ///|
-/// 校验发射分矩阵形状 (T x K)，返回序列长度 T。
+/// 校验数组全部为有限数（非 NaN / ±Inf），否则报 InvalidShape。
+fn check_finite(arr : Array[Double], what : String) -> Unit raise CrfError {
+  for i in 0..<arr.length() {
+    if !arr[i].is_finite() {
+      raise CrfError::InvalidShape("\{what}[\{i}] is not finite")
+    }
+  }
+}
+
+///|
+/// 校验发射分矩阵形状 (T x K) 与有限性，返回序列长度 T。
 fn check_emissions(
   emissions : Array[Array[Double]],
   num_tags : Int32,
@@ -94,6 +109,11 @@ fn check_emissions(
   for i in 0..<t {
     if emissions[i].length() != num_tags {
       raise CrfError::InvalidShape("emissions row \{i} length != num_tags")
+    }
+    for j in 0..<num_tags {
+      if !emissions[i][j].is_finite() {
+        raise CrfError::InvalidShape("emissions[\{i}][\{j}] is not finite")
+      }
     }
   }
   t
