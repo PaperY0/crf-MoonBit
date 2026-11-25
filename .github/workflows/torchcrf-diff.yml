@@ -1,0 +1,35 @@
+name: torchcrf-diff
+
+# 手动触发的差分对拍：安装 CPU 版 torch + pytorch-crf，
+# 用 torchcrf 自身的 decode/score/normalizer 生成期望值，
+# 权重经 tools/export_torchcrf.py 往返后交给 MoonBit 库断言。
+on:
+  workflow_dispatch:
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install torch (CPU) and pytorch-crf
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install pytorch-crf==0.7.2
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Generate differential vectors from real torchcrf
+        run: |
+          moon update
+          python tools/diff_torchcrf.py
+
+      - name: Run differential tests
+        run: moon test --target wasm
