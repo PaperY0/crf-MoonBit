@@ -2,193 +2,57 @@
 
 ## 1. 项目名称
 
-**crf-MoonBit**（MoonBit 模块名：`PaperY0/crf`，当前版本 0.2.0，MIT 许可证）
+crf-MoonBit（MoonBit 模块名 `PaperY0/crf`，MIT 许可证，当前版本 0.2.0）。
 
 ## 2. 项目简介
 
-crf-MoonBit 是一个**纯 MoonBit 实现的线性链条件随机场（linear-chain CRF）推理库**。
-给定上游编码器（BiLSTM / BERT / 任意特征模型）输出的发射分与一组转移权重，提供：
-Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向–后向边际概率、
-后验（MBR）解码、路径合法性校验、逐位置置信度（最大后验概率 + Shannon 熵）、
-路径打分与条件对数似然，并内置 BIO / BIOES 结构约束。
+纯 MoonBit 实现的线性链条件随机场（CRF）推理库。上游编码器（BiLSTM / BERT 等）给出发射分后，本库负责结构化决策：Viterbi 解码、精确 n-best、配分函数 log Z、前向–后向边际概率、后验解码、逐位置置信度（最大后验概率 + Shannon 熵）、路径打分与条件似然，内置 BIO / BIOES 约束。全程 log 域计算、纯函数无 IO，权重 JSON 与 pytorch-crf 互通——PyTorch 训练、MoonBit 推理，部署到 wasm / wasm-gc / js / native 四后端，覆盖浏览器、边缘设备与服务端。
 
-全程 log 域计算、纯函数式无 IO，权重 JSON 与 PyTorch 生态的 pytorch-crf 互通：
-**训练在 PyTorch 完成，推理部署到 MoonBit 的 wasm / wasm-gc / js / native 四后端**，
-覆盖浏览器、边缘设备与服务端。正确性由独立 numpy 参考实现的 13 条交叉验证向量、
-20 个伪随机模型的性质测试与 100% 库代码行覆盖率共同保证（36 个测试四后端全过，
-另有真实 pytorch-crf 差分对拍 CI job）。
+## 3. 项目方向与通用性
 
-## 3. 项目方向与通用性说明
+方向是序列标注的推理基础设施，不绑定具体任务、模型或语言：只认"发射分矩阵 + 转移权重"，命名实体识别、词性标注、事件抽取、语义槽填充等线性链问题都适用；约束掩码由标签名自动生成，也支持自定义 start/end/transition 掩码。纯 MoonBit、无后端特定代码，四后端 CI 全绿。
 
-**方向**：结构化预测（structured prediction）/ 序列标注的**推理基础设施**。
+生态空白经三轮查重确认：mooncakes 注册表 3917 个模块全量关键词扫描、官方 `moon search crf`（返回 No modules found）、GitHub 交叉核验，生态内没有通用线性链 CRF 推理库；最接近的 moonnlp 提供的是可训练 HMM，与判别式 CRF 数学形式不同。
 
-**通用性**体现在四个层面：
+## 4. 预期使用场景
 
-- **任务无关**：库只认"发射分矩阵 + 转移权重"，不绑定任何具体任务。命名实体识别、
-  词性标注、组块分析、事件抽取（论元角色标注）、语义槽填充、生物序列标注等
-  一切可建模为线性链标注的问题都直接适用。
-- **模型无关**：发射分来自任意上游编码器——BiLSTM、BERT、CNN、甚至手工特征线性模型。
-  本库不做神经网络前向，与上游架构完全解耦。
-- **语言无关**：约束掩码由标签名自动生成（BIO/BIOES），中文、英文或任何语言的
-  标签体系均可；也支持完全自定义的 start/end/transition 布尔掩码。
-- **平台无关**：纯 MoonBit、无 IO、无后端特定代码，`moon check --target all`
-  四后端零警告，wasm / wasm-gc / js / native 四后端测试在 CI 全绿。
+**场景一：浏览器 / 边缘端命名实体识别。** 隐私敏感文本（医疗、本地文档）不能上云。PyTorch 训练 BiLSTM-CRF，用 `export_torchcrf.py` 导出权重，MoonBit 编 wasm 在浏览器内 `from_json` 加载、`bio_mask` 生成约束、`decode` 输出合法 BIO 实体序列，文本不出设备。
 
-**生态定位（三轮查重确认的空白）**：对 mooncakes 注册表 3917 个模块全量关键词扫描、
-官方 `moon search crf` 实时深搜（返回 No modules found）、GitHub 交叉核验，
-确认生态内没有线性链 CRF 推理库。最接近的 `ppyq882/moonnlp` 提供的是可训练 BMES
-**HMM**（生成式、转移归一化），与判别式 CRF 数学形式不同；jieba/pinyin/moonbio 等
-内部虽用 Viterbi，但均绑定各自领域，不提供通用 CRF 推理。本项目填补
-"拿训练好的 CRF 权重在 MoonBit 做结构化推理"这一空白。
+**场景二：RAG 知识抽取的幻觉筛查。** 知识入库前用 `marginals` / `confidence` 计算逐位置后验与熵，低 max_prob、高熵的位置标记为不确定，`log_likelihood` 对整条路径设阈值拒收，低置信结果转人工复核而非直接写进知识库。
 
-## 4. 预期使用场景（3 个完整场景）
-
-### 场景一：浏览器 / 边缘端命名实体识别部署
-
-- **背景**：隐私敏感场景（医疗文本、本地文档）不能把文本发到云端，需要在浏览器
-  或边缘设备本地完成 NER。
-- **输入**：PyTorch 训练好的 BiLSTM-CRF / BERT-CRF 模型；待标注文本的编码器发射分。
-- **流程**：
-  1. 训练侧运行 `python tools/export_torchcrf.py state_dict.pt model.json` 导出 CRF 权重；
-  2. 部署侧 `Crf::from_json` 加载权重，`bio_mask(["O","B-PER","I-PER",...])` 生成约束；
-  3. 上游编码器（如 ONNX/Transformers.js）逐 token 产出发射分 `[T][K]`；
-  4. `crf.decode(emissions, mask, Some(ca))` 得到合法 BIO 标签序列。
-- **输出**：实体边界与类型（如 `B-PER I-PER O B-LOC`），约束保证不出现
-  "I-PER 跟在 O 后"这类非法标注；MoonBit 编 wasm 在浏览器内运行，文本不出设备。
-- **用到的 API**：`from_json`、`bio_mask`、`decode`、`decode_batch`（变长批）。
-
-### 场景二：RAG 知识抽取的幻觉筛查
-
-- **背景**：从检索文档抽取结构化三元组写入知识库时，低置信抽取结果是幻觉的主要来源，
-  需要在入库前量化每个位置的不确定性。
-- **输入**：抽取模型的发射分；待评估的标签路径。
-- **流程**：
-  1. `crf.marginals(emissions, None, None)` 计算逐位置后验分布；
-  2. `crf.confidence(...)` 得到每个位置的 `max_prob` 与 Shannon 熵；
-  3. 设定阈值（如 max_prob < 0.6 或熵 > 0.8·ln K）标记"模型不确定"位置；
-  4. `crf.log_likelihood(emissions, path, ...)` 对整条路径给出条件对数似然，
-     低于阈值的路径整体拒收。
-- **输出**：高置信结果自动入库；低置信位置触发人工复核或拒答，而不是把
-  猜测写进知识库。`validate_path` 同时把关外部系统产生的路径合法性。
-- **用到的 API**：`marginals`、`confidence`、`log_likelihood`、`validate_path`。
-
-### 场景三：事件抽取的候选重排与人工分流
-
-- **背景**：事件论元标注中，单一最优路径常因局部歧义出错；下游有规则或小模型
-  重排器，需要多个高质量候选而非一个答案。
-- **输入**：事件抽取编码器的发射分；BIOES 标签体系。
-- **流程**：
-  1. `bioes_mask(tags)` 生成 B/I/E/S/O 约束（禁止悬空 B、非法起始 I）；
-  2. `crf.nbest(emissions, None, Some(ca), 5)` 取精确前 5 条合法路径及分数；
-  3. 重排器在候选间选择；`crf.posterior_decode(...)` 提供 MBR 准则的第二意见，
-     与 Viterbi 结果不一致的位置提示歧义；
-  4. 分歧大的样本分流给人工标注。
-- **输出**：重排后的最终论元标注 + 歧义位置清单 + 人工复核队列。
-- **用到的 API**：`bioes_mask`、`nbest`、`posterior_decode`、`viterbi`、`score_path`。
+**场景三：事件抽取的候选重排与人工分流。** `bioes_mask` 约束下用 `nbest` 取前 5 条合法路径供下游重排器选择，`posterior_decode` 给出 MBR 准则的第二意见，与 Viterbi 分歧大的样本分流给人工标注。
 
 ## 5. 拟实现的核心功能
 
-**已实现（v0.2.0，全部有测试与参考向量支撑）**：
+已实现（v0.2.0，均有测试与参考向量支撑）：Viterbi / n-best / log Z / 边际 / 后验解码 / 置信度 / 路径校验 / 打分 / 似然；批量解码、批量边际与置信度；标签名接口；BIO / BIOES 与自定义约束；torchcrf 兼容 JSON I/O 与导出脚本；CLI；可运行示例 `examples/ner`；`moon bench` 性能基准；真实 pytorch-crf 差分对拍 CI。
 
-1. log 域 Viterbi 解码（`decode` / `viterbi`），支持任意位置 padding mask；
-2. 精确 n-best（每状态保留至多 n 条部分路径，非近似 beam）；
-3. 前向算法配分函数 `log_partition`（max-shift logsumexp，数值稳定）；
-4. 前向–后向边际概率 `marginals`（每行和为 1，交叉验证误差 <1e-6）；
-5. 后验解码 `posterior_decode` 与路径校验 `validate_path`；
-6. 逐位置置信度 `confidence`（max_prob + 熵）；
-7. 路径打分 `score_path`、条件对数似然 `log_likelihood`、批解码 `decode_batch`；
-8. 批量边际 `marginals_batch` 与批量置信度 `confidence_batch`；
-9. 标签名接口 `decode_labels` / `DecodedPath::labels`；
-10. BIO / BIOES 约束掩码自动生成 + 任意自定义 `Constraints`；
-11. torchcrf 兼容权重 JSON I/O（`from_json` / `to_json`）与导出脚本；
-12. CLI（演示 / JSON 解码 / 约束选项 / n-best / 置信度输出）；
-13. 可运行示例 `examples/ner`（CI 四后端冒烟）；
-14. 性能基准 `moon bench`（`BENCH.md` 参考数据与复杂度说明）；
-15. 真实 pytorch-crf 差分对拍 CI job（float64，权重经导出脚本往返）。
-
-**后续规划（v0.3 路线）**：
-
-- BMES / BIOES 之外的更多标注体系掩码（如 BILOU）；
-- 大批量推理优化（缓冲复用）；
-- 浏览器可视化 demo 页（js 后端，输入发射分热图实时解码）。
-
-（v0.2 已完成：批量边际/置信度、标签名接口、examples、性能基准、torchcrf 差分对拍。）
-
-**明确不做**：神经网络前向、CRF 训练/梯度、高阶/树状/半马尔可夫 CRF（推理-only 定位）。
+后续规划（v0.3）：BILOU 等更多标注体系掩码、大批量推理缓冲复用、浏览器可视化 demo 页。明确不做：神经网络前向、CRF 训练 / 梯度、高阶 / 树状 CRF（推理-only 定位）。
 
 ## 6. 原创性声明
 
-**本项目为原创项目**，不是移植项目：
+原创项目，非移植。约 1000 行库代码与 1200 行测试独立编写，未复制任何现有项目源码；实现的是公有领域的经典线性链 CRF 算法（Lafferty, McCallum & Pereira, 2001）。与 pytorch-crf 仅做权重布局与递推语义的互操作对齐，便于导入训练好的参数，二者在语言、范围、结构上均不同；交叉验证用的 numpy 参考实现亦独立编写，不与库共享源码。
 
-- 全部 MoonBit 代码（约 1100 行库代码 + 700 行测试）为本项目独立编写，
-  未复制任何现有项目的源码；
-- 实现的算法是经典线性链 CRF 推理（Lafferty, McCallum & Pereira, 2001），
-  属于公有领域的标准算法，不存在对某一实现的代码依赖；
-- 与 pytorch-crf 的关系是**权重布局与递推语义的互操作对齐**（便于导入训练好的参数），
-  而非代码移植：pytorch-crf 是 PyTorch 训练模块（含 NN 前向与梯度），
-  本项目是纯推理库，二者代码语言、范围、结构均不同；
-- 交叉验证用的 numpy 参考实现（`tools/gen_vectors.py`）亦为独立编写，
-  与 MoonBit 库不共享任何源码，保证验证的独立性。
+## 7. 参考项目与许可证
 
-## 7. 参考项目与许可证（透明披露）
-
-虽非移植，仍列出设计参考：
-
-| 参考 | 来源 | 许可证 | 参考内容 |
-| --- | --- | --- | --- |
-| pytorch-crf | https://github.com/kmkurn/pytorch-crf | MIT | 权重布局（start/end/transitions）、`transitions[i][j]`=i→j 方向约定、forward/Viterbi 递推语义（已核对 0.7.2 源码） |
-| CRF 原始论文 | Lafferty et al., ICML 2001 | 学术文献 | 线性链 CRF 模型定义 |
-| PyTorch NLP 教程 | https://pytorch.org/tutorials/beginner/nlp/advanced_tutorial.html | BSD-3 | 对照其转置约定并在 README 中提醒差异 |
-
-本项目以 **MIT** 发布，LICENSE 见仓库根目录。
+非移植项目，仍透明披露设计参考：pytorch-crf（https://github.com/kmkurn/pytorch-crf ，MIT，参考权重布局与 forward / Viterbi 递推语义，已核对 0.7.2 源码）；CRF 原始论文（Lafferty et al., ICML 2001）。本项目以 MIT 发布，LICENSE 见仓库根目录。
 
 ## 8. GitHub 仓库与有效提交
 
-**仓库**：https://github.com/PaperY0/crf-MoonBit （公开，CI 全绿）
+仓库：https://github.com/PaperY0/crf-MoonBit （公开，CI 全绿；mooncakes 已发布 `PaperY0/crf@0.2.0`）。
 
-共 **32 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
-无意义拆分或重复提交：
+共 32 个有效提交，无空提交、无意义拆分或重复提交，完整清单见仓库 git 历史。代表性提交：
 
-| # | 提交 | 内容 |
-| --- | --- | --- |
-| 1 | `edf3696` | 初始版本 v0.1.0：核心推理库（Viterbi/n-best/logZ/边际/打分/似然）、BIO/BIOES 约束、torchcrf I/O、CLI、双语 README、CI、MIT |
-| 2 | `7ce00f0` | 参考向量跨平台稳定化：量化到 10 位有效数字，CI 钉住 numpy 版本 |
-| 3 | `1832b07` | 新功能：后验（边际最大）解码 + 约束路径合法性校验（含测试） |
-| 4 | `bc086d6` | 新功能：逐位置置信度（最大边际概率 + Shannon 熵，含测试） |
-| 5 | `681c472` | BIOES 约束交叉验证：生成器扩展 + 3 条新参考向量 |
-| 6 | `afe6cc9` | 性质测试：20 个确定性伪随机模型上的跨模型不变量 |
-| 7 | `1940b61` | 覆盖率补测：补齐全部错误分支与批处理 API，库代码行覆盖率 100%，COVERAGE.md |
-| 8 | `2362246` | CLI 增强：--bio/--bioes/--nbest、置信度与标签名输出、CI 冒烟扩展 |
-| 9 | `a4dd9f4` | 文档：新 API、三个使用场景、28 测试与覆盖率说明 |
-| 10 | `e7899fa` | 发版 v0.1.1：版本号 + CHANGELOG |
-| 11 | `21fd476` | 项目申报书 APPLICATION.md |
-| 12 | `c020c19` | 加固：NaN/Inf 非有限输入守卫（权重/发射分在构造与推理期校验，含测试） |
-| 13 | `acc359b` | 测试：非前缀（头部/中间位置）padding 掩码等价性断言 |
-| 14 | `b2528e9` | CI：ubuntu 新增 native 后端 check 与测试岗位 |
-| 15 | `d54ffde` | 文档：README API 类型对齐 Int32 签名；申报书提交哈希补全 |
-| 16 | `9ad8e22` | 元数据：刷新 moon.mod 描述与可检索关键词 |
-| 17 | `0d68e69` | 文档：测试计数同步 30，记录 native CI、输入守卫与元数据刷新 |
-| 18 | `dfd5220` | 文档：申报书提交表记录文档同步提交 |
-| 19 | `a00b328` | 文档：申报书提交数与 git 历史对齐 |
-| 20 | `8fe600e` | 发版 v0.1.2：非有限输入守卫、非前缀掩码测试、native CI |
-| 21 | `3f9cae6` | 新功能：marginals_batch / confidence_batch（含等价性与错误分支测试） |
-| 22 | `d9863f6` | 新功能：decode_labels / DecodedPath::labels 标签名接口（含测试） |
-| 23 | `e19fcd9` | examples/ner 端到端示例 + CI 四后端冒烟 |
-| 24 | `ef66962` | 性能基准：moon bench 多规模基准 + BENCH.md 参考数据 |
-| 25 | `0e9ea45` | torchcrf-diff 手动 CI job：真实 pytorch-crf 差分对拍 |
-| 26 | `75452ee` | 修复：差分脚本 padding 位 tags 补齐 |
-| 27 | `702666b` | 修复：torchcrf 内部方法 seq-first 布局转置 |
-| 28 | `25b2c3a` | 修复：差分向量路径整数字面量 |
-| 29 | `b2434d9` | 发版 v0.2.0：新 API 文档、申报书同步与版本号 |
-| 30 | `7f5ed91` | 申报书提交表勘误：补 dfd5220 行并对齐总数 |
-| 31 | `2f8ee18` | CI 强化：CLI 冒烟补全（--bioes/--nbest/错误退出）+ 每后端覆盖率门禁 |
-| 32 | （本提交） | 文档：CHANGELOG 与申报书同步第三档 CI 强化 |
+- `edf3696` 初始版本：核心推理库 + 约束 + I/O + CLI + CI
+- `1832b07` 后验解码 + 约束路径校验
+- `bc086d6` 逐位置置信度（最大概率 + 熵）
+- `afe6cc9` 性质测试：20 个伪随机模型上的不变量
+- `c020c19` NaN / Inf 非有限输入守卫
+- `3f9cae6` 批量边际 / 置信度 API
+- `d9863f6` 标签名解码接口
+- `e19fcd9` 端到端示例 + 四后端冒烟
+- `ef66962` 性能基准 + BENCH.md
+- `0e9ea45` 真实 pytorch-crf 差分对拍 CI
+- `2f8ee18` CLI 冒烟补全 + 每后端覆盖率门禁
+- `b2434d9` 发版 v0.2.0
 
-**质量证据**：36 个测试 × wasm/wasm-gc/js/native 四后端全过；`moon check --target all`
-四后端 0 警告；13 条独立 numpy 参考向量交叉验证（路径精确相等、数值误差 <1e-6）；
-库代码行覆盖率 100%（wasm / wasm-gc / js 三后端分别验证，CI 每后端设门禁）；
-CI 含 fmt/check/接口/native 测试/参考可复现/覆盖率多道门禁，CLI 冒烟覆盖
-演示、JSON、BIO/BIOES 约束、n-best 与全部错误退出分支；
-另有手动触发的 torchcrf-diff job：真实 pytorch-crf（float64）5 条差分对拍，
-权重经导出脚本往返，最近一次运行 41/41 全过。
-mooncakes 已发布：https://mooncakes.io/docs/PaperY0/crf （`moon add PaperY0/crf`）。
+质量证据：36 个测试 × wasm / wasm-gc / js / native 四后端全过；13 条独立 numpy 参考向量交叉验证（路径精确相等、数值误差 <1e-6）；库代码行覆盖率三后端均 100%（CI 每后端设门禁）；torchcrf 差分对拍 41/41 全过。
