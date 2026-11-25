@@ -154,7 +154,7 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 | 8 | `2362246` | CLI 增强：--bio/--bioes/--nbest、置信度与标签名输出、CI 冒烟扩展 |
 | 9 | `a4dd9f4` | 文档：新 API、三个使用场景、28 测试与覆盖率说明 |
 | 10 | `e7899fa` | 发版 v0.1.1：版本号 + CHANGELOG |
-| 11 | （本文档所在提交） | 项目申报书 APPLICATION.md |
+| 11 | `21fd476` | 项目申报书 APPLICATION.md |
 
 **质量证据**：28 个测试 × wasm/wasm-gc/js 三后端全过；`moon check --target all`
 四后端 0 警告；13 条独立 numpy 参考向量交叉验证（路径精确相等、数值误差 <1e-6）；

@@ -97,35 +97,35 @@ let top3 = crf.nbest(emissions, None, Some(ca), 3) catch { e => panic() }
 
 ```moonbit nocheck
 // 构造
-pub fn Crf::new(num_tags : Int, start : Array[Double], end : Array[Double],
+pub fn Crf::new(num_tags : Int32, start : Array[Double], end : Array[Double],
                 transitions : Array[Array[Double]]) -> Crf raise CrfError
-pub fn Crf::uniform(num_tags : Int) -> Crf raise CrfError   // 全零权重
+pub fn Crf::uniform(num_tags : Int32) -> Crf raise CrfError   // 全零权重
 pub fn Crf::from_json(String) -> Crf raise CrfError
 pub fn Crf::to_json(Crf) -> String
-pub fn Crf::tag_count(Crf) -> Int
+pub fn Crf::tag_count(Crf) -> Int32
 
 // 推理（mask / constraints 传 None 表示不启用）
-pub fn Crf::decode(Crf, emissions, mask : Array[Bool]?, ca : Constraints?) -> Array[Int] raise CrfError
+pub fn Crf::decode(Crf, emissions, mask : Array[Bool]?, ca : Constraints?) -> Array[Int32] raise CrfError
 pub fn Crf::viterbi(Crf, emissions, mask?, ca?) -> DecodedPath raise CrfError
-pub fn Crf::nbest(Crf, emissions, mask?, ca?, n : Int) -> Array[DecodedPath] raise CrfError
+pub fn Crf::nbest(Crf, emissions, mask?, ca?, n : Int32) -> Array[DecodedPath] raise CrfError
 pub fn Crf::log_partition(Crf, emissions, mask?, ca?) -> Double raise CrfError
 pub fn Crf::marginals(Crf, emissions, mask?, ca?) -> Array[Array[Double]] raise CrfError
-pub fn Crf::score_path(Crf, emissions, path : Array[Int], mask?) -> Double raise CrfError
+pub fn Crf::score_path(Crf, emissions, path : Array[Int32], mask?) -> Double raise CrfError
 pub fn Crf::log_likelihood(Crf, emissions, path, mask?, ca?) -> Double raise CrfError
-pub fn Crf::decode_batch(Crf, batch, masks?, ca?) -> Array[Array[Int]] raise CrfError
-pub fn Crf::posterior_decode(Crf, emissions, mask?, ca?) -> Array[Int] raise CrfError
-pub fn Crf::validate_path(Crf, path : Array[Int], ca?) -> Bool raise CrfError
+pub fn Crf::decode_batch(Crf, batch, masks?, ca?) -> Array[Array[Int32]] raise CrfError
+pub fn Crf::posterior_decode(Crf, emissions, mask?, ca?) -> Array[Int32] raise CrfError
+pub fn Crf::validate_path(Crf, path : Array[Int32], ca?) -> Bool raise CrfError
 pub fn Crf::confidence(Crf, emissions, mask?, ca?) -> Confidence raise CrfError
 pub struct Confidence { max_prob : Array[Double]; entropy : Array[Double] }
 
 // 约束
 pub struct Constraints { start : Array[Bool]; end : Array[Bool]; transitions : Array[Array[Bool]] }
-pub fn Constraints::allow_all(num_tags : Int) -> Constraints
+pub fn Constraints::allow_all(num_tags : Int32) -> Constraints
 pub fn bio_mask(tags : Array[String]) -> Constraints raise CrfError
 pub fn bioes_mask(tags : Array[String]) -> Constraints raise CrfError
 
 // 结果与工具
-pub struct DecodedPath { tags : Array[Int]; score : Double }
+pub struct DecodedPath { tags : Array[Int32]; score : Double }
 pub fn logsumexp(Array[Double]) -> Double
 pub suberror CrfError { InvalidShape(String); EmptySequence; InvalidTags(String);
                         InvalidConstraint(String); JsonError(String) }
