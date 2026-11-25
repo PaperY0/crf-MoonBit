@@ -2,3 +2,7 @@ import {
   "moonbitlang/core/math",
   "moonbitlang/core/json",
 }
+
+import {
+  "moonbitlang/core/bench",
+} for "wbtest"

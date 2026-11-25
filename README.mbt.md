@@ -56,7 +56,7 @@ let top3 = crf.nbest(emissions, None, Some(ca), 3) catch { e => panic() }
 ## 正确性 / Correctness
 
 与独立 numpy 参考实现（精确复刻 torchcrf 递推）交叉对拍：13 条固定种子向量（7 无约束 + 3 BIO + 3 BIOES），
-Viterbi 路径精确相等、score / log Z / 边际误差 < 1e-6。**30 个测试在 wasm / wasm-gc / js / native 四后端全过**，
+Viterbi 路径精确相等、score / log Z / 边际误差 < 1e-6。**36 个测试在 wasm / wasm-gc / js / native 四后端全过**，
 库代码行覆盖率 100%，`moon check --target all` 四后端 0 警告。
 
 非目标：神经网络前向、CRF 训练、高阶 / 树状 CRF。推理-only。

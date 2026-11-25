@@ -150,13 +150,15 @@ pub suberror CrfError { InvalidShape(String); EmptySequence; InvalidTags(String)
 - 另有手写不变量测试：零权重模型退化为逐位置 softmax、BIO 禁止非法 I-after-O、
   n-best 首条等于 Viterbi 且降序、mask padding 等价、JSON 往返、错误路径。
 
-**30 个测试在 wasm / wasm-gc / js 三后端全部通过**，`moon check --target all` 四后端 0 警告；
-**库代码行覆盖率 100%**（见 [`COVERAGE.md`](COVERAGE.md)，CLI 由 CI 冒烟覆盖）。
+**36 个测试在 wasm / wasm-gc / js 三后端全部通过**，`moon check --target all` 四后端 0 警告；
+**库代码行覆盖率 100%**（见 [`COVERAGE.md`](COVERAGE.md)，CLI 由 CI 冒烟覆盖）；
+性能基准见 [`BENCH.md`](BENCH.md)（`moon bench --release`）。
 
 ```bash
-moon test --target wasm     # 30/30
-moon test --target wasm-gc  # 30/30
-moon test --target js       # 30/30
+moon test --target wasm     # 36/36
+moon test --target wasm-gc  # 36/36
+moon test --target js       # 36/36
+moon bench --release        # 性能基准
 python tools/gen_vectors.py # 重新生成参考向量（CI 校验逐字节可复现）
 ```
 
@@ -271,7 +273,7 @@ torchcrf's forward / Viterbi / forward–backward recursions: 13 fixed-seed vect
 + 3 BIO + 3 BIOES) assert exact Viterbi paths and score / log Z / marginals within 1e-6.
 Beyond Viterbi, the library offers posterior (marginal-argmax) decoding, path validation,
 per-position confidence (max marginal probability and Shannon entropy), and exact n-best.
-**30 tests pass on wasm, wasm-gc, js, and native (ubuntu CI)** with 100% library line coverage;
+**36 tests pass on wasm, wasm-gc, js, and native (ubuntu CI)** with 100% library line coverage;
 `moon check --target all` is warning-free on all four backends. Local native test execution needs a working C toolchain for the MoonBit runtime (a Windows
 msys2 header issue is unrelated to this library); CI also covers native on ubuntu.
 
