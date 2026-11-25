@@ -49,6 +49,7 @@ pub fn Crf::confidence(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -
 pub fn Crf::confidence_batch(Self, Array[Array[Array[Double]]], Array[Array[Bool]]?, Constraints?) -> Array[Confidence] raise CrfError
 pub fn Crf::decode(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Int32] raise CrfError
 pub fn Crf::decode_batch(Self, Array[Array[Array[Double]]], Array[Array[Bool]]?, Constraints?) -> Array[Array[Int32]] raise CrfError
+pub fn Crf::decode_labels(Self, Array[String], Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[String] raise CrfError
 pub fn Crf::from_json(String) -> Self raise CrfError
 pub fn Crf::log_likelihood(Self, Array[Array[Double]], Array[Int32], Array[Bool]?, Constraints?) -> Double raise CrfError
 pub fn Crf::log_partition(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Double raise CrfError
@@ -69,6 +70,7 @@ pub struct DecodedPath {
   tags : Array[Int32]
   score : Double
 }
+pub fn DecodedPath::labels(Self, Array[String]) -> Array[String] raise CrfError
 
 // Type aliases
 
