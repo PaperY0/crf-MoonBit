@@ -47,10 +47,12 @@ pub fn Crf::log_partition(Self, Array[Array[Double]], Array[Bool]?, Constraints?
 pub fn Crf::marginals(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Array[Double]] raise CrfError
 pub fn Crf::nbest(Self, Array[Array[Double]], Array[Bool]?, Constraints?, Int32) -> Array[DecodedPath] raise CrfError
 pub fn Crf::new(Int32, Array[Double], Array[Double], Array[Array[Double]]) -> Self raise CrfError
+pub fn Crf::posterior_decode(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> Array[Int32] raise CrfError
 pub fn Crf::score_path(Self, Array[Array[Double]], Array[Int32], Array[Bool]?) -> Double raise CrfError
 pub fn Crf::tag_count(Self) -> Int32
 pub fn Crf::to_json(Self) -> String
 pub fn Crf::uniform(Int32) -> Self raise CrfError
+pub fn Crf::validate_path(Self, Array[Int32], Constraints?) -> Bool raise CrfError
 pub fn Crf::viterbi(Self, Array[Array[Double]], Array[Bool]?, Constraints?) -> DecodedPath raise CrfError
 
 #derive(Eq, @debug.Debug)
