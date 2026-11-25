@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0 (2026-11-25)
+
+### 新增
+- `Crf::marginals_batch` / `Crf::confidence_batch`：批量前向–后向边际与置信度，
+  语义与逐条调用一致，共享批掩码校验。
+- `Crf::decode_labels` / `DecodedPath::labels`：标签名便捷接口，
+  Viterbi 与 n-best 结果可直接映射为人类可读标签。
+- `examples/ner`：最小端到端示例（JSON 权重 → BIO 约束 → 标签名解码 →
+  置信度 → n-best），CI 四后端冒烟断言。
+- 性能基准：`moon bench --release`（decode/logZ/marginals/nbest 多规模），
+  参考数据与复杂度说明见 `BENCH.md`。
+- `torchcrf-diff` 手动 CI workflow：真实 pytorch-crf（float64）差分对拍，
+  权重经 `tools/export_torchcrf.py` 往返，5 条差分用例（含 padding 掩码）。
+
+### 质量
+- 测试总数 36（差分 job 内 41），wasm / wasm-gc / js / native 四后端全过；
+  库代码行覆盖率保持 100%。
+
 ## 0.1.2 (2026-11-25)
 
 ### 加固

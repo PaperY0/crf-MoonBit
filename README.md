@@ -113,6 +113,9 @@ pub fn Crf::marginals(Crf, emissions, mask?, ca?) -> Array[Array[Double]] raise 
 pub fn Crf::score_path(Crf, emissions, path : Array[Int32], mask?) -> Double raise CrfError
 pub fn Crf::log_likelihood(Crf, emissions, path, mask?, ca?) -> Double raise CrfError
 pub fn Crf::decode_batch(Crf, batch, masks?, ca?) -> Array[Array[Int32]] raise CrfError
+pub fn Crf::marginals_batch(Crf, batch, masks?, ca?) -> Array[Array[Array[Double]]] raise CrfError
+pub fn Crf::confidence_batch(Crf, batch, masks?, ca?) -> Array[Confidence] raise CrfError
+pub fn Crf::decode_labels(Crf, tags : Array[String], emissions, mask?, ca?) -> Array[String] raise CrfError
 pub fn Crf::posterior_decode(Crf, emissions, mask?, ca?) -> Array[Int32] raise CrfError
 pub fn Crf::validate_path(Crf, path : Array[Int32], ca?) -> Bool raise CrfError
 pub fn Crf::confidence(Crf, emissions, mask?, ca?) -> Confidence raise CrfError
@@ -126,6 +129,7 @@ pub fn bioes_mask(tags : Array[String]) -> Constraints raise CrfError
 
 // 结果与工具
 pub struct DecodedPath { tags : Array[Int32]; score : Double }
+pub fn DecodedPath::labels(DecodedPath, tags : Array[String]) -> Array[String] raise CrfError
 pub fn logsumexp(Array[Double]) -> Double
 pub suberror CrfError { InvalidShape(String); EmptySequence; InvalidTags(String);
                         InvalidConstraint(String); JsonError(String) }
@@ -164,6 +168,17 @@ python tools/gen_vectors.py # 重新生成参考向量（CI 校验逐字节可�
 
 > 本机若装有 torch，可用 `tools/export_torchcrf.py state_dict.pt model.json` 导出**真实训练权重**
 > 再做端到端验证；参考向量本身由独立 numpy 实现生成，不依赖 torch。
+> CI 另有手动触发的 `torchcrf-diff` workflow：在 ubuntu 安装 CPU 版 torch + pytorch-crf，
+> 用 torchcrf 自身的 decode/score/normalizer（float64）生成 5 条差分向量
+> （权重经导出脚本往返），与 MoonBit 库对拍，最近一次运行 41/41 全过。
+
+## 示例
+
+```bash
+moon run examples/ner   # JSON 权重 → BIO 约束 → 标签名解码 → 置信度 → n-best
+```
+
+详见 [`examples/README.md`](examples/README.md)。
 
 ## CLI
 

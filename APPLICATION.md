@@ -2,7 +2,7 @@
 
 ## 1. 项目名称
 
-**crf-MoonBit**（MoonBit 模块名：`PaperY0/crf`，当前版本 0.1.1，MIT 许可证）
+**crf-MoonBit**（MoonBit 模块名：`PaperY0/crf`，当前版本 0.2.0，MIT 许可证）
 
 ## 2. 项目简介
 
@@ -15,7 +15,8 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 全程 log 域计算、纯函数式无 IO，权重 JSON 与 PyTorch 生态的 pytorch-crf 互通：
 **训练在 PyTorch 完成，推理部署到 MoonBit 的 wasm / wasm-gc / js / native 四后端**，
 覆盖浏览器、边缘设备与服务端。正确性由独立 numpy 参考实现的 13 条交叉验证向量、
-20 个伪随机模型的性质测试与 100% 库代码行覆盖率共同保证（30 个测试三后端全过）。
+20 个伪随机模型的性质测试与 100% 库代码行覆盖率共同保证（36 个测试四后端全过，
+另有真实 pytorch-crf 差分对拍 CI job）。
 
 ## 3. 项目方向与通用性说明
 
@@ -87,7 +88,7 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 
 ## 5. 拟实现的核心功能
 
-**已实现（v0.1.1，全部有测试与参考向量支撑）**：
+**已实现（v0.2.0，全部有测试与参考向量支撑）**：
 
 1. log 域 Viterbi 解码（`decode` / `viterbi`），支持任意位置 padding mask；
 2. 精确 n-best（每状态保留至多 n 条部分路径，非近似 beam）；
@@ -96,16 +97,22 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 5. 后验解码 `posterior_decode` 与路径校验 `validate_path`；
 6. 逐位置置信度 `confidence`（max_prob + 熵）；
 7. 路径打分 `score_path`、条件对数似然 `log_likelihood`、批解码 `decode_batch`；
-8. BIO / BIOES 约束掩码自动生成 + 任意自定义 `Constraints`；
-9. torchcrf 兼容权重 JSON I/O（`from_json` / `to_json`）与导出脚本；
-10. CLI（演示 / JSON 解码 / 约束选项 / n-best / 置信度输出）。
+8. 批量边际 `marginals_batch` 与批量置信度 `confidence_batch`；
+9. 标签名接口 `decode_labels` / `DecodedPath::labels`；
+10. BIO / BIOES 约束掩码自动生成 + 任意自定义 `Constraints`；
+11. torchcrf 兼容权重 JSON I/O（`from_json` / `to_json`）与导出脚本；
+12. CLI（演示 / JSON 解码 / 约束选项 / n-best / 置信度输出）；
+13. 可运行示例 `examples/ner`（CI 四后端冒烟）；
+14. 性能基准 `moon bench`（`BENCH.md` 参考数据与复杂度说明）；
+15. 真实 pytorch-crf 差分对拍 CI job（float64，权重经导出脚本往返）。
 
-**后续规划（v0.2 路线）**：
+**后续规划（v0.3 路线）**：
 
 - BMES / BIOES 之外的更多标注体系掩码（如 BILOU）；
-- 性能基准与大批量推理优化（缓冲复用）；
-- 浏览器可视化 demo 页（js 后端，输入发射分热图实时解码）；
-- 与真实 torchcrf 训练权重的端到端差分对拍（CI 可选 job）。
+- 大批量推理优化（缓冲复用）；
+- 浏览器可视化 demo 页（js 后端，输入发射分热图实时解码）。
+
+（v0.2 已完成：批量边际/置信度、标签名接口、examples、性能基准、torchcrf 差分对拍。）
 
 **明确不做**：神经网络前向、CRF 训练/梯度、高阶/树状/半马尔可夫 CRF（推理-only 定位）。
 
@@ -139,7 +146,7 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 
 **仓库**：https://github.com/PaperY0/crf-MoonBit （公开，CI 全绿）
 
-共 **18 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
+共 **28 个有效提交**，每个都是完整的功能/测试/文档/发版单元，无空提交、
 无意义拆分或重复提交：
 
 | # | 提交 | 内容 |
@@ -161,8 +168,21 @@ Viterbi 最优路径解码、精确 n-best 候选、配分函数 log Z、前向�
 | 15 | `d54ffde` | 文档：README API 类型对齐 Int32 签名；申报书提交哈希补全 |
 | 16 | `9ad8e22` | 元数据：刷新 moon.mod 描述与可检索关键词 |
 | 17 | `0d68e69` | 文档：测试计数同步 30，记录 native CI、输入守卫与元数据刷新 |
+| 18 | `a00b328` | 文档：申报书提交数与 git 历史对齐 |
+| 19 | `8fe600e` | 发版 v0.1.2：非有限输入守卫、非前缀掩码测试、native CI |
+| 20 | `3f9cae6` | 新功能：marginals_batch / confidence_batch（含等价性与错误分支测试） |
+| 21 | `d9863f6` | 新功能：decode_labels / DecodedPath::labels 标签名接口（含测试） |
+| 22 | `e19fcd9` | examples/ner 端到端示例 + CI 四后端冒烟 |
+| 23 | `ef66962` | 性能基准：moon bench 多规模基准 + BENCH.md 参考数据 |
+| 24 | `0e9ea45` | torchcrf-diff 手动 CI job：真实 pytorch-crf 差分对拍 |
+| 25 | `75452ee` | 修复：差分脚本 padding 位 tags 补齐 |
+| 26 | `702666b` | 修复：torchcrf 内部方法 seq-first 布局转置 |
+| 27 | `25b2c3a` | 修复：差分向量路径整数字面量 |
+| 28 | （本提交） | 发版 v0.2.0：新 API 文档、申报书同步与版本号 |
 
-**质量证据**：30 个测试 × wasm/wasm-gc/js/native 四后端全过；`moon check --target all`
+**质量证据**：36 个测试 × wasm/wasm-gc/js/native 四后端全过；`moon check --target all`
 四后端 0 警告；13 条独立 numpy 参考向量交叉验证（路径精确相等、数值误差 <1e-6）；
-库代码行覆盖率 100%；CI 含 fmt/check/接口/native 测试/参考可复现多道门禁。
+库代码行覆盖率 100%；CI 含 fmt/check/接口/native 测试/参考可复现多道门禁；
+另有手动触发的 torchcrf-diff job：真实 pytorch-crf（float64）5 条差分对拍，
+权重经导出脚本往返，最近一次运行 41/41 全过。
 mooncakes 已发布：https://mooncakes.io/docs/PaperY0/crf （`moon add PaperY0/crf`）。
