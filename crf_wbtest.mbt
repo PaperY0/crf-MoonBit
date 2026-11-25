@@ -118,6 +118,34 @@ test "mask padding equivalence" {
 }
 
 ///|
+test "mask padding equivalence for non-prefix positions" {
+  let crf = Crf::uniform(2) catch { e => fail(e.message()) }
+  let keep = [[1.0, 0.0], [0.0, 2.0]]
+  let keep_path = crf.decode(keep, None, None) catch { e => fail(e.message()) }
+  let keep_logz = crf.log_partition(keep, None, None) catch {
+    e => fail(e.message())
+  }
+  // 头部 padding：丢弃第 0 位。
+  let head = [[9.0, 9.0], [1.0, 0.0], [0.0, 2.0]]
+  let mh = [false, true, true]
+  let dh = crf.decode(head, Some(mh), None) catch { e => fail(e.message()) }
+  assert_eq(dh, keep_path)
+  let lh = crf.log_partition(head, Some(mh), None) catch {
+    e => fail(e.message())
+  }
+  close(lh, keep_logz, "head-padded logz")
+  // 中间 padding：丢弃第 1 位。
+  let mid = [[1.0, 0.0], [9.0, 9.0], [0.0, 2.0]]
+  let mm = [true, false, true]
+  let dm = crf.decode(mid, Some(mm), None) catch { e => fail(e.message()) }
+  assert_eq(dm, keep_path)
+  let lm = crf.log_partition(mid, Some(mm), None) catch {
+    e => fail(e.message())
+  }
+  close(lm, keep_logz, "middle-padded logz")
+}
+
+///|
 test "json roundtrip preserves model and decoding" {
   let crf = Crf::new(2, [0.1, -0.2], [0.3, 0.4], [[0.5, -0.6], [0.7, 0.8]]) catch {
     e => fail(e.message())
